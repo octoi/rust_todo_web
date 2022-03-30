@@ -1,4 +1,3 @@
-use model::Error;
 use sqlb::{HasFields, Raw};
 
 use super::db::Db;
@@ -36,7 +35,7 @@ impl TodoMac {
 }
 
 impl TodoMac {
-    pub async fn create(db: &Db, utx: &UserCtx, data: TodoPatch) -> Result<Todo, Error> {
+    pub async fn create(db: &Db, utx: &UserCtx, data: TodoPatch) -> Result<Todo, model::Error> {
         let mut fields = data.fields();
         fields.push(("cid", 123).into());
 
@@ -50,7 +49,7 @@ impl TodoMac {
         Ok(todo)
     }
 
-    pub async fn get(db: &Db, _utx: &UserCtx, id: i64) -> Result<Todo, Error> {
+    pub async fn get(db: &Db, _utx: &UserCtx, id: i64) -> Result<Todo, model::Error> {
         let sb = sqlb::select()
             .table(Self::TABLE)
             .columns(Self::COLUMNS)
@@ -61,12 +60,17 @@ impl TodoMac {
         handle_fetch_one_result(result, Self::TABLE, id)
     }
 
-    pub async fn update(db: &Db, utx: &UserCtx, id: i64, data: TodoPatch) -> Result<Todo, Error> {
+    pub async fn update(
+        db: &Db,
+        utx: &UserCtx,
+        id: i64,
+        data: TodoPatch,
+    ) -> Result<Todo, model::Error> {
         let mut fields = data.fields();
 
-        // argument the fields with the cid/ctime
+        // augment the fields with the cid/ctime
         fields.push(("mid", utx.user_id).into());
-        fields.push(("raw", Raw("now()")).into());
+        fields.push(("ctime", Raw("now()")).into());
 
         let sb = sqlb::update()
             .table(Self::TABLE)
@@ -79,11 +83,18 @@ impl TodoMac {
         handle_fetch_one_result(result, Self::TABLE, id)
     }
 
-    // pub async fn delete(db: &Db, _utx: &UserCtx, id: i64) -> Result<Todo, Error> {
-    //     let sb = sqlb
-    // }
+    pub async fn delete(db: &Db, _utx: &UserCtx, id: i64) -> Result<Todo, model::Error> {
+        let sb = sqlb::delete()
+            .table(Self::TABLE)
+            .returning(Self::COLUMNS)
+            .and_where_eq("id", id);
 
-    pub async fn list(db: &Db, _utx: &UserCtx) -> Result<Vec<Todo>, Error> {
+        let result = sb.fetch_one(db).await;
+
+        handle_fetch_one_result(result, Self::TABLE, id)
+    }
+
+    pub async fn list(db: &Db, _utx: &UserCtx) -> Result<Vec<Todo>, model::Error> {
         let sb = sqlb::select()
             .table(Self::TABLE)
             .columns(Self::COLUMNS)
@@ -101,11 +112,9 @@ fn handle_fetch_one_result(
     typ: &'static str,
     id: i64,
 ) -> Result<Todo, model::Error> {
-    result.map_err(|sqlx_error| -> Error {
-        match sqlx_error {
-            sqlx::Error::RowNotFound => Error::EntityNotFound(typ, id.to_string()),
-            other => Error::SqlxError(other),
-        }
+    result.map_err(|sqlx_error| match sqlx_error {
+        sqlx::Error::RowNotFound => model::Error::EntityNotFound(typ, id.to_string()),
+        other => model::Error::SqlxError(other),
     })
 }
 
