@@ -1,4 +1,4 @@
-use super::{TodoMac, TodoPatch};
+use super::{Todo, TodoMac, TodoPatch};
 use crate::{
     model::{self, db::init_db, todo::TodoStatus},
     security::utx_from_token,
@@ -112,6 +112,26 @@ async fn model_todo_list() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(100, todos[1].id);
     assert_eq!(123, todos[1].cid);
     assert_eq!("todo 100", todos[1].title);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn model_todo_delete_simple() -> Result<(), Box<dyn std::error::Error>> {
+    // -- FIXTURE
+    let db = init_db().await?;
+    let utx = utx_from_token("123").await?;
+
+    // -- ACTION
+    let todo = TodoMac::delete(&db, &utx, 100).await?;
+
+    // -- CHECK - deleted item
+    assert_eq!(100, todo.id);
+    assert_eq!("todo 100", todo.title);
+
+    // -- CHECK - list
+    let todos: Vec<Todo> = sqlb::select().table("todo").fetch_all(&db).await?;
+    assert_eq!(1, todos.len());
 
     Ok(())
 }
