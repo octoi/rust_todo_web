@@ -1,0 +1,11 @@
+/node_modules/
+/public/build/
+
+.DS_Store
+
+# lock files
+*.lock
+
+# workspace
+.vscode
+.idea
