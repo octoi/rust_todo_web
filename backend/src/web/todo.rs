@@ -1,14 +1,14 @@
 use serde::Serialize;
 use serde_json::json;
-use std::{convert::Infallible, sync::Arc};
+use std::sync::Arc;
 use warp::{reply::Json, Filter};
 
 use crate::{
     model::{Db, TodoMac, TodoPatch},
-    security::{utx_from_token, UserCtx},
+    security::UserCtx,
 };
 
-use super::{filter_auth::do_auth, filter_utils::with_db};
+use super::filter_auth::do_auth;
 
 pub fn todo_rest_filters(
     base_path: &'static str,

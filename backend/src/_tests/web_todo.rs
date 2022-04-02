@@ -1,7 +1,7 @@
 use std::{str::from_utf8, sync::Arc};
 
 use anyhow::{Context, Ok, Result};
-use serde::{Deserialize, Deserializer};
+use serde::Deserialize;
 use serde_json::{from_value, json, Value};
 use warp::hyper::Response;
 use warp::{hyper::body::Bytes, Filter};

@@ -4,33 +4,22 @@ use crate::{
     web::todo::todo_rest_filters,
 };
 use serde_json::json;
-use std::{convert::Infallible, fmt::format, path::Path, sync::Arc};
+use std::convert::Infallible;
+use std::sync::Arc;
 use warp::{Filter, Rejection, Reply};
 
 mod filter_auth;
 mod filter_utils;
 mod todo;
 
-pub async fn start_web(web_folder: &str, web_port: u16, db: Arc<Db>) -> Result<(), Error> {
-    // validate web_folder
-    if !Path::new(web_folder).exists() {
-        return Err(Error::FailStartWebFolderNotFound(web_folder.to_string()));
-    }
-
+pub async fn start_web(web_port: u16, db: Arc<Db>) -> Result<(), Error> {
     // Apis
     let apis = todo_rest_filters("api", db);
+    let routes = apis.recover(handle_rejection);
 
-    // Static content
-    let content = warp::fs::dir(web_folder.to_string());
-    let root_index = warp::get()
-        .and(warp::path::end())
-        .and(warp::fs::file(format!("{}/index.html", web_folder)));
-    let static_site = content.or(root_index);
-
-    // Combine all routes
-    let routes = apis.or(static_site).recover(handle_rejection);
-
-    println!("Start at 127.0.0.1:{} at {}", web_port, web_folder);
+    println!("Start at 127.0.0.1:{}", web_port);
+    println!("🚀 http://127.0.0.1:{}", web_port);
+    println!("🚀 http://localhost:{}", web_port);
     warp::serve(routes).run(([127, 0, 0, 1], web_port)).await;
 
     Ok(())
