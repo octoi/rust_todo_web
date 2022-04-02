@@ -38,8 +38,7 @@ impl TodoMac {
 impl TodoMac {
     pub async fn create(db: &Db, utx: &UserCtx, data: TodoPatch) -> Result<Todo, model::Error> {
         let mut fields = data.fields();
-        fields.push(("cid", 123).into());
-
+        fields.push(("cid", utx.user_id).into());
         let sb = sqlb::insert()
             .table(Self::TABLE)
             .data(fields)
@@ -68,7 +67,6 @@ impl TodoMac {
         data: TodoPatch,
     ) -> Result<Todo, model::Error> {
         let mut fields = data.fields();
-
         // augment the fields with the cid/ctime
         fields.push(("mid", utx.user_id).into());
         fields.push(("ctime", Raw("now()")).into());
@@ -84,6 +82,18 @@ impl TodoMac {
         handle_fetch_one_result(result, Self::TABLE, id)
     }
 
+    pub async fn list(db: &Db, _utx: &UserCtx) -> Result<Vec<Todo>, model::Error> {
+        let sb = sqlb::select()
+            .table(Self::TABLE)
+            .columns(Self::COLUMNS)
+            .order_by("!id");
+
+        // execute the query
+        let todos = sb.fetch_all(db).await?;
+
+        Ok(todos)
+    }
+
     pub async fn delete(db: &Db, _utx: &UserCtx, id: i64) -> Result<Todo, model::Error> {
         let sb = sqlb::delete()
             .table(Self::TABLE)
@@ -93,18 +103,6 @@ impl TodoMac {
         let result = sb.fetch_one(db).await;
 
         handle_fetch_one_result(result, Self::TABLE, id)
-    }
-
-    pub async fn list(db: &Db, _utx: &UserCtx) -> Result<Vec<Todo>, model::Error> {
-        let sb = sqlb::select()
-            .table(Self::TABLE)
-            .columns(Self::COLUMNS)
-            .order_by("!id");
-
-        // execute query
-        let todos = sb.fetch_all(db).await?;
-
-        Ok(todos)
     }
 }
 
