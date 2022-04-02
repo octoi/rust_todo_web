@@ -2,8 +2,9 @@ use crate::{
     model::{self, Db},
     security,
 };
-use std::{fmt::format, path::Path, sync::Arc};
-use warp::Filter;
+use serde_json::json;
+use std::{convert::Infallible, fmt::format, path::Path, sync::Arc};
+use warp::{Filter, Rejection, Reply};
 
 mod filter_auth;
 mod filter_utils;
@@ -23,7 +24,7 @@ pub async fn start_web(web_folder: &str, web_port: u16, db: Arc<Db>) -> Result<(
     let static_site = content.or(root_index);
 
     // Combine all routes
-    let routes = static_site;
+    let routes = static_site.recover(handle_rejection);
 
     println!("Start at 127.0.0.1:{} at {}", web_port, web_folder);
     warp::serve(routes).run(([127, 0, 0, 1], web_port)).await;
@@ -31,10 +32,34 @@ pub async fn start_web(web_folder: &str, web_port: u16, db: Arc<Db>) -> Result<(
     Ok(())
 }
 
+async fn handle_rejection(err: Rejection) -> Result<impl Reply, Infallible> {
+    // Print to server side
+    println!("ERROR - {:?}", err);
+
+    // TODO: Call log API for capture and store
+
+    // Build user message
+    let user_message = match err.find::<WebErrorMessage>() {
+        Some(err) => err.typ.to_string(),
+        None => "Unknown".to_string(),
+    };
+
+    let result = json!({ "errorMessage": user_message });
+    let result = warp::reply::json(&result);
+
+    Ok(warp::reply::with_status(
+        result,
+        warp::http::StatusCode::BAD_REQUEST,
+    ))
+}
+
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
     #[error("Web server failed to start because web-folder '{0}' not found.")]
     FailStartWebFolderNotFound(String),
+
+    #[error("Fail authentication missing X-Auth-Token header.")]
+    FailAuthMissingXAuth,
 }
 
 // Warp custom error

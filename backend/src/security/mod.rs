@@ -1,10 +1,12 @@
 use thiserror::Error as ThisError;
 
+use crate::model::Db;
+
 pub struct UserCtx {
     pub user_id: i64,
 }
 
-pub async fn utx_from_token(token: &str) -> Result<UserCtx, Error> {
+pub async fn utx_from_token(_db: &Db, token: &str) -> Result<UserCtx, Error> {
     // TODO: real validation needed
     // for now, just parse to 164
 

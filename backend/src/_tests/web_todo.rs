@@ -3,22 +3,24 @@ use std::{str::from_utf8, sync::Arc};
 use anyhow::{Context, Ok, Result};
 use serde::{Deserialize, Deserializer};
 use serde_json::{from_value, Value};
-use warp::hyper::body::Bytes;
 use warp::hyper::Response;
+use warp::{hyper::body::Bytes, Filter};
 
 use super::todo_rest_filters;
 use crate::model::{init_db, Todo, TodoStatus};
+use crate::web::handle_rejection;
 
 #[tokio::test]
 async fn web_todo_list() -> Result<()> {
     // -- FIXTURE
     let db = init_db().await?;
     let db = Arc::new(db);
-    let todo_apis = todo_rest_filters("api", db.clone());
+    let todo_apis = todo_rest_filters("api", db.clone()).recover(handle_rejection);
 
     // -- ACTION
     let resp = warp::test::request()
         .method("GET")
+        .header("X-Auth-Token", "123")
         .path("/api/todos")
         .reply(&todo_apis)
         .await;
