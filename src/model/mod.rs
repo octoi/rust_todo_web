@@ -2,6 +2,7 @@ use thiserror::Error as ThisError;
 
 mod db;
 mod todo;
+mod user;
 
 // re-export
 pub use db::init_db;
@@ -18,4 +19,21 @@ pub enum Error {
 
     #[error(transparent)]
     IoError(#[from] std::io::Error),
+
+    #[error("Username is already taken - {0}")]
+    UserNameIsAlreadyTaken(String),
+
+    #[error("Invalid password for username - {0}")]
+    InvalidPassword(String),
+}
+
+pub fn handle_fetch_one_result<T>(
+    result: Result<T, sqlx::Error>,
+    typ: &'static str,
+    data: String,
+) -> Result<T, Error> {
+    result.map_err(|sqlx_error| match sqlx_error {
+        sqlx::Error::RowNotFound => Error::EntityNotFound(typ, data),
+        other => Error::SqlxError(other),
+    })
 }

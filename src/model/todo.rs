@@ -57,7 +57,7 @@ impl TodoMac {
 
         let result = sb.fetch_one(db).await;
 
-        handle_fetch_one_result(result, Self::TABLE, id)
+        model::handle_fetch_one_result(result, Self::TABLE, id.to_string())
     }
 
     pub async fn update(
@@ -79,7 +79,7 @@ impl TodoMac {
 
         let result = sb.fetch_one(db).await;
 
-        handle_fetch_one_result(result, Self::TABLE, id)
+        model::handle_fetch_one_result(result, Self::TABLE, id.to_string())
     }
 
     pub async fn list(db: &Db, _utx: &UserCtx) -> Result<Vec<Todo>, model::Error> {
@@ -102,19 +102,8 @@ impl TodoMac {
 
         let result = sb.fetch_one(db).await;
 
-        handle_fetch_one_result(result, Self::TABLE, id)
+        model::handle_fetch_one_result(result, Self::TABLE, id.to_string())
     }
-}
-
-fn handle_fetch_one_result(
-    result: Result<Todo, sqlx::Error>,
-    typ: &'static str,
-    id: i64,
-) -> Result<Todo, model::Error> {
-    result.map_err(|sqlx_error| match sqlx_error {
-        sqlx::Error::RowNotFound => model::Error::EntityNotFound(typ, id.to_string()),
-        other => model::Error::SqlxError(other),
-    })
 }
 
 #[cfg(test)]
