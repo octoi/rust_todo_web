@@ -6,12 +6,19 @@ CREATE TYPE todo_status_enum AS ENUM (
 
 -- Todo
 CREATE TABLE todo (
-  id bigserial,
-  cid bigint NOT NULL, -- creator user id
-	ctime timestamp with time zone DEFAULT now(),
-  mid bigint, -- modifier user id
-	mtime timestamp with time zone,   
-  title text NOT NULL,
+  id BIGSERIAL,
+  cid BIGINT NOT NULL, -- creator user id
+	ctime TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  mid BIGINT, -- modifier user id
+	mtime TIMESTAMP WITH TIME ZONE,   
+  title TEXT NOT NULL,
   status todo_status_enum NOT NULL DEFAULT 'open'
 );
+
+CREATE TABLE person (
+  id BIGSERIAL PRIMARY KEY,
+  username TEXT NOT NULL UNIQUE,
+  password TEXT NOT NULL
+);
+
 ALTER SEQUENCE todo_id_seq RESTART WITH 1000;
