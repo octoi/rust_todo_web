@@ -13,24 +13,12 @@ pub fn do_auth(db: Arc<Db>) -> impl Filter<Extract = (UserCtx,), Error = warp::R
         .and(with_db(db))
         .and(warp::header::optional(HEADER_XAUTH))
         .and_then(|db: Arc<Db>, xauth: Option<String>| async move {
-            // ! DON'T USE THIS ON PRODUCTION
-            // I'm lazy to build user authentication sooo
-
             match xauth {
-                _ => {
-                    let utx = utx_from_token(&db, "123").await?;
+                Some(xauth) => {
+                    let utx = utx_from_token(&db, &xauth).await?;
                     Ok::<UserCtx, Rejection>(utx)
                 }
+                None => Err(super::Error::FailAuthMissingXAuth.into()),
             }
-
-            // * use this for production
-
-            // match xauth {
-            //     Some(xauth) => {
-            //         let utx = utx_from_token(&db, &xauth).await?;
-            //         Ok::<UserCtx, Rejection>(utx)
-            //     }
-            //     None => Err(Error::FailAuthMissingXAuth.into()),
-            // }
         })
 }
