@@ -49,10 +49,11 @@ impl TodoMac {
         Ok(todo)
     }
 
-    pub async fn get(db: &Db, _utx: &UserCtx, id: i64) -> Result<Todo, model::Error> {
+    pub async fn get(db: &Db, utx: &UserCtx, id: i64) -> Result<Todo, model::Error> {
         let sb = sqlb::select()
             .table(Self::TABLE)
             .columns(Self::COLUMNS)
+            .and_where_eq("cid", utx.user_id)
             .and_where_eq("id", id);
 
         let result = sb.fetch_one(db).await;
@@ -74,6 +75,7 @@ impl TodoMac {
         let sb = sqlb::update()
             .table(Self::TABLE)
             .data(fields)
+            .and_where_eq("cid", utx.user_id)
             .and_where_eq("id", id)
             .returning(Self::COLUMNS);
 
@@ -82,10 +84,11 @@ impl TodoMac {
         model::handle_fetch_one_result(result, Self::TABLE, id.to_string())
     }
 
-    pub async fn list(db: &Db, _utx: &UserCtx) -> Result<Vec<Todo>, model::Error> {
+    pub async fn list(db: &Db, utx: &UserCtx) -> Result<Vec<Todo>, model::Error> {
         let sb = sqlb::select()
             .table(Self::TABLE)
             .columns(Self::COLUMNS)
+            .and_where_eq("cid", utx.user_id)
             .order_by("!id");
 
         // execute the query
@@ -94,10 +97,11 @@ impl TodoMac {
         Ok(todos)
     }
 
-    pub async fn delete(db: &Db, _utx: &UserCtx, id: i64) -> Result<Todo, model::Error> {
+    pub async fn delete(db: &Db, utx: &UserCtx, id: i64) -> Result<Todo, model::Error> {
         let sb = sqlb::delete()
             .table(Self::TABLE)
             .returning(Self::COLUMNS)
+            .and_where_eq("cid", utx.user_id)
             .and_where_eq("id", id);
 
         let result = sb.fetch_one(db).await;
