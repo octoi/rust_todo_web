@@ -1,3 +1,5 @@
+// ! This test wont work because the there is not dummy data in database
+
 use std::{str::from_utf8, sync::Arc};
 
 use anyhow::{Context, Ok, Result};
@@ -16,13 +18,13 @@ async fn web_todo_list() -> Result<()> {
     // -- FIXTURE
     let db = init_db().await?;
     let db = Arc::new(db);
-    let todo_apis = todo_rest_filters("api", db.clone()).recover(handle_rejection);
+    let todo_apis = todo_rest_filters(db.clone()).recover(handle_rejection);
 
     // -- ACTION
     let resp = warp::test::request()
         .method("GET")
         .header("X-Auth-Token", "123")
-        .path("/api/todos")
+        .path("/todos")
         .reply(&todo_apis)
         .await;
 
@@ -46,13 +48,13 @@ async fn web_todo_get_ok() -> Result<()> {
     // -- FIXTURE
     let db = init_db().await?;
     let db = Arc::new(db);
-    let todo_apis = todo_rest_filters("api", db).recover(handle_rejection);
+    let todo_apis = todo_rest_filters(db).recover(handle_rejection);
 
     // -- ACTION
     let resp = warp::test::request()
         .method("GET")
         .header("X-Auth-Token", "123")
-        .path("/api/todos/100")
+        .path("/todos/100")
         .reply(&todo_apis)
         .await;
 
@@ -75,7 +77,7 @@ async fn web_todo_create_ok() -> Result<()> {
     // -- FIXTURE
     let db = init_db().await?;
     let db = Arc::new(db);
-    let todo_apis = todo_rest_filters("api", db.clone()).recover(handle_rejection);
+    let todo_apis = todo_rest_filters(db.clone()).recover(handle_rejection);
     // new todo fixture
     const TITLE: &str = "test - web_todo_create_ok";
     let body = json!({
@@ -86,7 +88,7 @@ async fn web_todo_create_ok() -> Result<()> {
     let resp = warp::test::request()
         .method("POST")
         .header("X-Auth-Token", "123")
-        .path("/api/todos")
+        .path("/todos")
         .json(&body)
         .reply(&todo_apis)
         .await;
@@ -110,7 +112,7 @@ async fn web_todo_update_ok() -> Result<()> {
     // -- FIXTURE
     let db = init_db().await?;
     let db = Arc::new(db);
-    let todo_apis = todo_rest_filters("api", db.clone()).recover(handle_rejection);
+    let todo_apis = todo_rest_filters(db.clone()).recover(handle_rejection);
     // udpated todo
     const TITLE: &str = "test - todo 100 updated";
     let body = json!({
@@ -122,7 +124,7 @@ async fn web_todo_update_ok() -> Result<()> {
     let resp = warp::test::request()
         .method("PATCH")
         .header("X-Auth-Token", "123")
-        .path("/api/todos/100")
+        .path("/todos/100")
         .json(&body)
         .reply(&todo_apis)
         .await;
@@ -146,13 +148,13 @@ async fn web_todo_delete_ok() -> Result<()> {
     // -- FIXTURE
     let db = init_db().await?;
     let db = Arc::new(db);
-    let todo_apis = todo_rest_filters("api", db.clone()).recover(handle_rejection);
+    let todo_apis = todo_rest_filters(db.clone()).recover(handle_rejection);
 
     // -- ACTION
     let resp = warp::test::request()
         .method("DELETE")
         .header("X-Auth-Token", "123")
-        .path("/api/todos/100")
+        .path("/todos/100")
         .reply(&todo_apis)
         .await;
 
