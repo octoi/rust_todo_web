@@ -1,23 +1,26 @@
 use crate::{
     model::{self, Db},
     security,
-    web::todo::todo_rest_filters,
+    web::{todo::todo_rest_filters, user::user_rest_filters},
 };
+use serde::Serialize;
 use serde_json::json;
 use std::convert::Infallible;
 use std::sync::Arc;
-use warp::{Filter, Rejection, Reply};
+use warp::{reply::Json, Filter, Rejection, Reply};
 
 mod filter_auth;
 mod filter_utils;
 mod todo;
+mod user;
 
 pub async fn start_web(web_port: u16, db: Arc<Db>) -> Result<(), Error> {
     // Apis
-    let apis = todo_rest_filters("api", db);
-    let routes = apis.recover(handle_rejection);
+    let todo_api = todo_rest_filters(db.clone());
+    let user_api = user_rest_filters(db);
+    let routes = todo_api.or(user_api).recover(handle_rejection);
 
-    println!("Start at 127.0.0.1:{}", web_port);
+    println!("[+] RUNNING WEB SERVER ON 127.0.0.1:{}", web_port);
     println!("🚀 http://127.0.0.1:{}", web_port);
     println!("🚀 http://localhost:{}", web_port);
     warp::serve(routes).run(([127, 0, 0, 1], web_port)).await;
@@ -33,7 +36,7 @@ async fn handle_rejection(err: Rejection) -> Result<impl Reply, Infallible> {
 
     // Build user message
     let user_message = match err.find::<WebErrorMessage>() {
-        Some(err) => err.typ.to_string(),
+        Some(err) => err.message.to_string(),
         None => "Unknown".to_string(),
     };
 
@@ -44,6 +47,11 @@ async fn handle_rejection(err: Rejection) -> Result<impl Reply, Infallible> {
         result,
         warp::http::StatusCode::BAD_REQUEST,
     ))
+}
+
+pub fn json_response<D: Serialize>(data: D) -> Result<Json, warp::Rejection> {
+    let response = json!({ "data": data });
+    Ok(warp::reply::json(&response))
 }
 
 #[derive(thiserror::Error, Debug)]
