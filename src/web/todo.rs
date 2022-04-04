@@ -1,5 +1,3 @@
-use serde::Serialize;
-use serde_json::json;
 use std::sync::Arc;
 use warp::{reply::Json, Filter};
 
@@ -11,10 +9,9 @@ use crate::{
 use super::filter_auth::do_auth;
 
 pub fn todo_rest_filters(
-    base_path: &'static str,
     db: Arc<Db>,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    let todos_path = warp::path(base_path).and(warp::path("todos"));
+    let todos_path = warp::path("todos");
     let common = super::filter_utils::with_db(db.clone()).and(do_auth(db.clone()));
 
     // LIST todos `GET todos/`
@@ -58,17 +55,17 @@ pub fn todo_rest_filters(
 
 async fn todo_list(db: Arc<Db>, utx: UserCtx) -> Result<Json, warp::Rejection> {
     let todos = TodoMac::list(&db, &utx).await?;
-    json_response(todos)
+    super::json_response(todos)
 }
 
 async fn todo_get(db: Arc<Db>, utx: UserCtx, id: i64) -> Result<Json, warp::Rejection> {
     let todo = TodoMac::get(&db, &utx, id).await?;
-    json_response(todo)
+    super::json_response(todo)
 }
 
 async fn todo_create(db: Arc<Db>, utx: UserCtx, patch: TodoPatch) -> Result<Json, warp::Rejection> {
     let todo = TodoMac::create(&db, &utx, patch).await?;
-    json_response(todo)
+    super::json_response(todo)
 }
 
 async fn todo_update(
@@ -78,17 +75,12 @@ async fn todo_update(
     patch: TodoPatch,
 ) -> Result<Json, warp::Rejection> {
     let todo = TodoMac::update(&db, &utx, id, patch).await?;
-    json_response(todo)
+    super::json_response(todo)
 }
 
 async fn todo_delete(db: Arc<Db>, utx: UserCtx, id: i64) -> Result<Json, warp::Rejection> {
     let todo = TodoMac::delete(&db, &utx, id).await?;
-    json_response(todo)
-}
-
-fn json_response<D: Serialize>(data: D) -> Result<Json, warp::Rejection> {
-    let response = json!({ "data": data });
-    Ok(warp::reply::json(&response))
+    super::json_response(todo)
 }
 
 #[cfg(test)]
