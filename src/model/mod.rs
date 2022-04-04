@@ -8,6 +8,7 @@ mod user;
 pub use db::init_db;
 pub use db::Db;
 pub use todo::{Todo, TodoMac, TodoPatch, TodoStatus};
+pub use user::{User, UserMac, UserPatch};
 
 #[derive(ThisError, Debug)]
 pub enum Error {
